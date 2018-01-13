@@ -1,0 +1,72 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+public class Browser
+{   
+    public static void main (String[] args) 
+    {
+
+    Connection connection = null;
+    ResultSet resultSet = null;
+    Statement statement = null;
+    String yourChromePath = "C:/Users/Win/AppData/Local/Google/Chrome/User Data/Default/History";
+    String[] yolo = new String[2] ;
+    yolo[0] = "facebook";    
+    yolo[1] = "github";
+
+    String query = generateSqlQuery(yolo);
+    try 
+        {
+        Class.forName ("org.sqlite.JDBC");
+        connection = DriverManager
+            .getConnection ("jdbc:sqlite:"+yourChromePath);
+        statement = connection.createStatement ();
+        resultSet = statement
+            .executeQuery (query);
+        
+        while (resultSet.next ()) 
+            {
+                
+            System.out.println ("URL [" + resultSet.getString ("url") + "]" +
+                        ", data ostatnij wizyty [" + resultSet.getString ("time") + "]");
+            }
+        } 
+
+    catch (Exception e) 
+        {
+            System.out.println ("Chrome jest aktualnie włączone co uniemożliwia dostęp do danych.");
+            //            e.printStackTrace ();
+        } 
+
+    finally 
+        {
+        try 
+            {
+            resultSet.close ();
+            statement.close ();
+            connection.close ();
+            } 
+
+        catch (Exception e) 
+            {
+            System.out.println ("Nie otwarto bazy danych, więc nie ma czego zamykać.");
+//            e.printStackTrace ();
+            }
+        }
+    }
+    public static String generateSqlQuery(String[] wordsToCheck){
+        String baseQuery = 
+                "SELECT url,  datetime((last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime') "
+                + "AS time FROM urls "
+                + "WHERE cast(time as Date) = cast(date('now') as Date) AND (";
+        
+        for (int i = 0; i < wordsToCheck.length; i++) {
+                 baseQuery+="url LIKE '%"+wordsToCheck[i]+"%' OR ";
+            }
+        baseQuery= baseQuery.substring(0, baseQuery.length()-3);;
+        baseQuery+=")";
+        return baseQuery;
+    }
+}
